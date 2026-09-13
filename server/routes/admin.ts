@@ -1,11 +1,8 @@
 import { Router } from 'express';
-import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import {
   getAdminByUsername,
-  createSession,
-  getSession,
-  deleteSession,
   updateAdminPassword,
   getCategories,
   createCategory,
@@ -17,8 +14,17 @@ import {
 
 export const adminRouter = Router();
 
-// Middleware: Authenticate Admin Session via HttpOnly Cookie or Authorization Header
-export async function requireAdminAuth(req: any, res: any, next: any) {
+// Secret key from SESSION_SECRET with fallback for local dev
+const getSessionSecret = (): string => {
+  const secret = process.env.SESSION_SECRET;
+  if (!secret || secret.trim() === '') {
+    return 'feast-default-session-secret-key-at-least-32-chars-random';
+  }
+  return secret;
+};
+
+// Middleware: Authenticate Admin Session via Stateless JWT (HttpOnly Cookie or Authorization Header)
+export function requireAdminAuth(req: any, res: any, next: any) {
   const authHeader = req.headers?.authorization;
   const headerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : (req.headers?.['x-admin-token'] as string);
   const token = req.cookies?.feast_admin_session || headerToken;
@@ -26,14 +32,19 @@ export async function requireAdminAuth(req: any, res: any, next: any) {
     return res.status(401).json({ ok: false, error: '未登入或 Session 已過期' });
   }
 
-  const session = await getSession(token);
-  if (!session) {
+  try {
+    const decoded = jwt.verify(token, getSessionSecret()) as { username?: string };
+    if (!decoded || !decoded.username) {
+      res.clearCookie('feast_admin_session', { path: '/' });
+      return res.status(401).json({ ok: false, error: 'Session 無效或已過期，請重新登入' });
+    }
+
+    req.adminUser = { username: decoded.username };
+    next();
+  } catch {
     res.clearCookie('feast_admin_session', { path: '/' });
     return res.status(401).json({ ok: false, error: 'Session 無效或已過期，請重新登入' });
   }
-
-  req.adminUser = { username: session.username };
-  next();
 }
 
 // POST /api/admin/login
@@ -54,11 +65,13 @@ adminRouter.post('/login', async (req, res) => {
       return res.status(401).json({ ok: false, error: '帳號或密碼錯誤' });
     }
 
-    // Generate secure session token
-    const token = crypto.randomBytes(32).toString('hex');
+    // Generate stateless JWT token with 7-day expiration
+    const token = jwt.sign(
+      { username: admin.username },
+      getSessionSecret(),
+      { expiresIn: '7d' }
+    );
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
-
-    await createSession(token, username, expiresAt);
 
     // Set HttpOnly cookie (support both HTTPS/reverse proxy and HTTP)
     const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
@@ -81,14 +94,8 @@ adminRouter.post('/login', async (req, res) => {
   }
 });
 
-// POST /api/admin/logout
-adminRouter.post('/logout', async (req, res) => {
-  const authHeader = req.headers?.authorization;
-  const headerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : (req.headers?.['x-admin-token'] as string);
-  const token = req.cookies?.feast_admin_session || headerToken;
-  if (token) {
-    await deleteSession(token);
-  }
+// POST /api/admin/logout (Stateless: clear cookie, frontend clears sessionStorage)
+adminRouter.post('/logout', (_req, res) => {
   res.clearCookie('feast_admin_session', { path: '/' });
   return res.json({ ok: true });
 });
