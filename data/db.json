@@ -1,0 +1,72 @@
+{
+  "admin_users": [
+    {
+      "id": 1,
+      "username": "yy661003",
+      "password_hash": "$2b$10$Mofbt.qFvya6mortsc69R.owMMBzIQz118Bg63K9S.6uV0J1euKjW",
+      "created_at": "2026-09-13T14:59:55.641Z",
+      "updated_at": "2026-09-13T14:59:55.641Z"
+    }
+  ],
+  "categories": [
+    {
+      "id": 1,
+      "name": "餐廳",
+      "sort_order": 1,
+      "is_active": true,
+      "created_at": "2026-09-13T14:59:55.641Z",
+      "updated_at": "2026-09-13T14:59:55.641Z"
+    },
+    {
+      "id": 2,
+      "name": "火鍋",
+      "sort_order": 2,
+      "is_active": true,
+      "created_at": "2026-09-13T14:59:55.641Z",
+      "updated_at": "2026-09-13T14:59:55.641Z"
+    },
+    {
+      "id": 3,
+      "name": "麵店",
+      "sort_order": 3,
+      "is_active": true,
+      "created_at": "2026-09-13T14:59:55.641Z",
+      "updated_at": "2026-09-13T14:59:55.641Z"
+    },
+    {
+      "id": 4,
+      "name": "便利商店",
+      "sort_order": 4,
+      "is_active": true,
+      "created_at": "2026-09-13T14:59:55.641Z",
+      "updated_at": "2026-09-13T14:59:55.641Z"
+    },
+    {
+      "id": 5,
+      "name": "速食",
+      "sort_order": 5,
+      "is_active": true,
+      "created_at": "2026-09-13T14:59:55.641Z",
+      "updated_at": "2026-09-13T14:59:55.641Z"
+    },
+    {
+      "id": 6,
+      "name": "自訂",
+      "sort_order": 6,
+      "is_active": true,
+      "created_at": "2026-09-13T14:59:55.641Z",
+      "updated_at": "2026-09-13T14:59:55.641Z"
+    }
+  ],
+  "site_settings": {
+    "site_title": "下山慶功宴搜尋系統",
+    "site_subtitle": "登山下山後，以登山口為起點，快速依真實行車時間搜尋周邊慶功宴美食",
+    "seo_title": "下山慶功宴搜尋系統｜登山口附近美食與餐廳推薦",
+    "seo_description": "專為山友設計的下山慶功宴搜尋系統。輸入登山口與理想車程，透過 Google Maps Platform 搜尋周邊實際美食並依實際行車時間精確篩選。",
+    "search_button_text": "搜尋慶功宴餐廳",
+    "trailhead_placeholder": "手動輸入登山口（例如：玉山登山口、合歡山松雪樓）",
+    "custom_search_placeholder": "輸入關鍵字（例如：熱炒、牛肉麵、羊肉爐）",
+    "driving_time_label": "最大可接受車程時間"
+  },
+  "sessions": []
+}

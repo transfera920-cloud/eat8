@@ -1,0 +1,6 @@
+{
+  "name": "下山慶功宴搜尋系統",
+  "description": "登山下山慶功宴搜尋系統，輸入登山口與理想車程，透過 Google Maps Platform 取得真實店家並以實際行車時間精確篩選。",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
