@@ -2,17 +2,16 @@ import 'dotenv/config';
 import express from 'express';
 import cookieParser from 'cookie-parser';
 import path from 'path';
-import { fileURLToPath } from 'url';
 import { createServer as createViteServer } from 'vite';
 import { apiRouter } from './server/routes/api.js';
 import { initDatabase } from './server/db.js';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
 async function startServer() {
   const app = express();
   const PORT = 3000;
+
+  // Trust first proxy (Cloud Run, Nginx, Cloudflare)
+  app.set('trust proxy', 1);
 
   // Basic middlewares
   app.use(express.json());
@@ -51,6 +50,17 @@ async function startServer() {
     });
     console.log('[Server] Serving production static files from dist.');
   }
+
+  // Global error handler: guarantees JSON response for API or server errors, never HTML
+  app.use((err: any, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
+    console.error('[Server Error]', err);
+    if (!res.headersSent) {
+      res.status(err.status || 500).json({
+        ok: false,
+        error: err.message || '伺服器內部錯誤',
+      });
+    }
+  });
 
   app.listen(PORT, '0.0.0.0', () => {
     console.log(`[Server] 下山慶功宴搜尋系統 running on http://0.0.0.0:${PORT}`);

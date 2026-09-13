@@ -17,16 +17,18 @@ import {
 
 export const adminRouter = Router();
 
-// Middleware: Authenticate Admin Session via HttpOnly Cookie
+// Middleware: Authenticate Admin Session via HttpOnly Cookie or Authorization Header
 export async function requireAdminAuth(req: any, res: any, next: any) {
-  const token = req.cookies?.feast_admin_session;
+  const authHeader = req.headers?.authorization;
+  const headerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : (req.headers?.['x-admin-token'] as string);
+  const token = req.cookies?.feast_admin_session || headerToken;
   if (!token) {
     return res.status(401).json({ ok: false, error: '未登入或 Session 已過期' });
   }
 
   const session = await getSession(token);
   if (!session) {
-    res.clearCookie('feast_admin_session');
+    res.clearCookie('feast_admin_session', { path: '/' });
     return res.status(401).json({ ok: false, error: 'Session 無效或已過期，請重新登入' });
   }
 
@@ -58,12 +60,12 @@ adminRouter.post('/login', async (req, res) => {
 
     await createSession(token, username, expiresAt);
 
-    // Set HttpOnly cookie
-    const isProduction = process.env.NODE_ENV === 'production';
+    // Set HttpOnly cookie (support both HTTPS/reverse proxy and HTTP)
+    const isHttps = req.secure || req.headers['x-forwarded-proto'] === 'https';
     res.cookie('feast_admin_session', token, {
       httpOnly: true,
-      secure: isProduction,
-      sameSite: 'lax',
+      secure: isHttps,
+      sameSite: isHttps ? 'none' : 'lax',
       expires: expiresAt,
       path: '/',
     });
@@ -71,6 +73,7 @@ adminRouter.post('/login', async (req, res) => {
     return res.json({
       ok: true,
       user: { username: admin.username },
+      token,
     });
   } catch (err: unknown) {
     console.error('Admin login error:', err);
@@ -80,7 +83,9 @@ adminRouter.post('/login', async (req, res) => {
 
 // POST /api/admin/logout
 adminRouter.post('/logout', async (req, res) => {
-  const token = req.cookies?.feast_admin_session;
+  const authHeader = req.headers?.authorization;
+  const headerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : (req.headers?.['x-admin-token'] as string);
+  const token = req.cookies?.feast_admin_session || headerToken;
   if (token) {
     await deleteSession(token);
   }

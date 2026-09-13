@@ -29,10 +29,32 @@ export const AdminLogin: React.FC<AdminLoginProps> = ({ onLoginSuccess, onCancel
         body: JSON.stringify({ username: username.trim(), password }),
       });
 
-      const data = await res.json();
-      if (!res.ok || !data.ok) {
-        setError(data.error || '登入失敗，請檢查帳號密碼');
+      // Safe response parsing to prevent Unexpected end of JSON input
+      let data: any = null;
+      const text = await res.text();
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = null;
+      }
+
+      if (!res.ok) {
+        const errorMsg = data?.error || (res.status === 404
+          ? '找不到登入 API（HTTP 404），請確認後端服務是否已啟動'
+          : res.status === 502 || res.status === 503
+          ? `伺服器連線閘道異常（HTTP ${res.status}），請稍後再試`
+          : `伺服器回應錯誤（HTTP ${res.status}）`);
+        setError(errorMsg);
         return;
+      }
+
+      if (!data || !data.ok) {
+        setError(data?.error || '登入失敗，請檢查帳號密碼');
+        return;
+      }
+
+      if (data.token) {
+        sessionStorage.setItem('feast_admin_token', data.token);
       }
 
       onLoginSuccess(data.user);

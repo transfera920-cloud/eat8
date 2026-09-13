@@ -41,12 +41,29 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onRefreshPublicD
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
+  // Safe authenticated fetch helper for admin actions
+  const adminFetch = async (url: string, options: RequestInit = {}) => {
+    const token = sessionStorage.getItem('feast_admin_token');
+    const headers = new Headers(options.headers || {});
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+    const res = await fetch(url, { ...options, headers });
+    const text = await res.text();
+    let data: any = null;
+    try {
+      data = text ? JSON.parse(text) : null;
+    } catch {
+      data = null;
+    }
+    return { res, data };
+  };
+
   // Fetch all categories (including inactive ones)
   const fetchAdminCategories = async () => {
     try {
-      const res = await fetch('/api/admin/categories');
-      const data = await res.json();
-      if (data.ok) {
+      const { res, data } = await adminFetch('/api/admin/categories');
+      if (res.ok && data?.ok) {
         setCategories(data.categories);
       }
     } catch (err) {
@@ -57,9 +74,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onRefreshPublicD
   // Fetch admin settings
   const fetchAdminSettings = async () => {
     try {
-      const res = await fetch('/api/admin/settings');
-      const data = await res.json();
-      if (data.ok) {
+      const { res, data } = await adminFetch('/api/admin/settings');
+      if (res.ok && data?.ok) {
         setSettings(data.settings);
       }
     } catch (err) {
@@ -87,7 +103,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onRefreshPublicD
 
     setIsLoading(true);
     try {
-      const res = await fetch('/api/admin/categories', {
+      const { res, data } = await adminFetch('/api/admin/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -96,8 +112,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onRefreshPublicD
           is_active: newCatActive,
         }),
       });
-      const data = await res.json();
-      if (data.ok) {
+      if (res.ok && data?.ok) {
         setNewCatName('');
         setNewCatOrder('10');
         setNewCatActive(true);
@@ -105,7 +120,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onRefreshPublicD
         await fetchAdminCategories();
         onRefreshPublicData();
       } else {
-        showMsg('error', data.error || '新增失敗');
+        showMsg('error', data?.error || `新增失敗 (HTTP ${res.status})`);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -132,7 +147,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onRefreshPublicD
 
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/admin/categories/${id}`, {
+      const { res, data } = await adminFetch(`/api/admin/categories/${id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -141,14 +156,13 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onRefreshPublicD
           is_active: editActive,
         }),
       });
-      const data = await res.json();
-      if (data.ok) {
+      if (res.ok && data?.ok) {
         setEditingId(null);
         showMsg('success', '分類更新成功');
         await fetchAdminCategories();
         onRefreshPublicData();
       } else {
-        showMsg('error', data.error || '更新失敗');
+        showMsg('error', data?.error || `更新失敗 (HTTP ${res.status})`);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -161,16 +175,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onRefreshPublicD
   // Quick Toggle Active
   const handleToggleActive = async (cat: Category) => {
     try {
-      const res = await fetch(`/api/admin/categories/${cat.id}`, {
+      const { res, data } = await adminFetch(`/api/admin/categories/${cat.id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ is_active: !cat.is_active }),
       });
-      const data = await res.json();
-      if (data.ok) {
+      if (res.ok && data?.ok) {
         await fetchAdminCategories();
         onRefreshPublicData();
         showMsg('success', `已${!cat.is_active ? '啟用' : '停用'}分類「${cat.name}」`);
+      } else {
+        showMsg('error', data?.error || `操作失敗 (HTTP ${res.status})`);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -186,16 +201,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onRefreshPublicD
 
     setIsLoading(true);
     try {
-      const res = await fetch(`/api/admin/categories/${id}`, {
+      const { res, data } = await adminFetch(`/api/admin/categories/${id}`, {
         method: 'DELETE',
       });
-      const data = await res.json();
-      if (data.ok) {
+      if (res.ok && data?.ok) {
         showMsg('success', `已成功刪除分類「${name}」`);
         await fetchAdminCategories();
         onRefreshPublicData();
       } else {
-        showMsg('error', data.error || '刪除失敗');
+        showMsg('error', data?.error || `刪除失敗 (HTTP ${res.status})`);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -212,18 +226,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onRefreshPublicD
 
     setIsLoading(true);
     try {
-      const res = await fetch('/api/admin/settings', {
+      const { res, data } = await adminFetch('/api/admin/settings', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(settings),
       });
-      const data = await res.json();
-      if (data.ok) {
+      if (res.ok && data?.ok) {
         showMsg('success', '前台文字設定已成功儲存至資料庫');
         setSettings(data.settings);
         onRefreshPublicData();
       } else {
-        showMsg('error', data.error || '儲存設定失敗');
+        showMsg('error', data?.error || `儲存設定失敗 (HTTP ${res.status})`);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -247,19 +260,18 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onRefreshPublicD
 
     setIsLoading(true);
     try {
-      const res = await fetch('/api/admin/change-password', {
+      const { res, data } = await adminFetch('/api/admin/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ oldPassword, newPassword }),
       });
-      const data = await res.json();
-      if (data.ok) {
+      if (res.ok && data?.ok) {
         showMsg('success', '管理員密碼更新成功！請妥善保管。');
         setOldPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        showMsg('error', data.error || '密碼變更失敗');
+        showMsg('error', data?.error || `密碼變更失敗 (HTTP ${res.status})`);
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);

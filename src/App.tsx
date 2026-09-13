@@ -53,8 +53,9 @@ export function App() {
   const loadCategories = useCallback(async () => {
     try {
       const res = await fetch('/api/categories');
-      const data = await res.json();
-      if (data.ok && Array.isArray(data.categories)) {
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : null;
+      if (res.ok && data?.ok && Array.isArray(data.categories)) {
         setCategories(data.categories);
       }
     } catch (err) {
@@ -66,8 +67,9 @@ export function App() {
   const loadSettings = useCallback(async () => {
     try {
       const res = await fetch('/api/settings');
-      const data = await res.json();
-      if (data.ok && data.settings) {
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : null;
+      if (res.ok && data?.ok && data.settings) {
         setSettings(data.settings);
         if (data.settings.site_title) {
           document.title = data.settings.seo_title || data.settings.site_title;
@@ -81,12 +83,21 @@ export function App() {
   // Check admin session
   const checkAdminAuth = useCallback(async () => {
     try {
-      const res = await fetch('/api/admin/me');
-      const data = await res.json();
-      if (data.ok && data.user) {
+      const token = sessionStorage.getItem('feast_admin_token');
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      const res = await fetch('/api/admin/me', { headers });
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : null;
+      if (res.ok && data?.ok && data?.user) {
         setAdminUser(data.user);
       } else {
         setAdminUser(null);
+        if (token && res.status === 401) {
+          sessionStorage.removeItem('feast_admin_token');
+        }
       }
     } catch {
       setAdminUser(null);
@@ -97,8 +108,9 @@ export function App() {
   const loadMapsConfig = useCallback(async () => {
     try {
       const res = await fetch('/api/maps-config');
-      const data = await res.json();
-      if (data.ok) {
+      const text = await res.text();
+      const data = text ? JSON.parse(text) : null;
+      if (res.ok && data?.ok) {
         setMapsConfig(data);
       }
     } catch (err) {
@@ -137,10 +149,16 @@ export function App() {
         body: JSON.stringify(params),
       });
 
-      const data = await res.json();
+      const text = await res.text();
+      let data: any = null;
+      try {
+        data = text ? JSON.parse(text) : null;
+      } catch {
+        data = null;
+      }
 
-      if (!res.ok || !data.ok) {
-        setSearchError(data.error || '搜尋失敗，請確認登山口名稱或網路連線');
+      if (!res.ok || !data?.ok) {
+        setSearchError(data?.error || `搜尋失敗（HTTP ${res.status}），請確認登山口名稱或網路連線`);
         setPlaces([]);
         setTrailheadInfo(null);
         return;
@@ -167,12 +185,19 @@ export function App() {
   // Handle Admin Logout
   const handleLogout = async () => {
     try {
-      await fetch('/api/admin/logout', { method: 'POST' });
+      const token = sessionStorage.getItem('feast_admin_token');
+      const headers: Record<string, string> = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      await fetch('/api/admin/logout', { method: 'POST', headers });
     } catch (err) {
       console.error('Logout error:', err);
+    } finally {
+      sessionStorage.removeItem('feast_admin_token');
+      setAdminUser(null);
+      setIsAdminView(false);
     }
-    setAdminUser(null);
-    setIsAdminView(false);
   };
 
   const effectiveClientApiKey = customClientApiKey.trim() || mapsConfig.clientApiKey;

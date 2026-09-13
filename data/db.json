@@ -68,5 +68,30 @@
     "custom_search_placeholder": "輸入關鍵字（例如：熱炒、牛肉麵、羊肉爐）",
     "driving_time_label": "最大可接受車程時間"
   },
-  "sessions": []
+  "sessions": [
+    {
+      "token": "8582e5e0ef42ad4668dd1255fef57c57071ff67fd8c6176746318044cd0f95e8",
+      "username": "yy661003",
+      "expires_at": "2026-09-20T15:06:19.314Z",
+      "created_at": "2026-09-13T15:06:19.314Z"
+    },
+    {
+      "token": "a8779e1be660db3c21fe3da1831f9231a09433cd9e4624a84e993ea273625e9e",
+      "username": "yy661003",
+      "expires_at": "2026-09-20T15:20:12.428Z",
+      "created_at": "2026-09-13T15:20:12.428Z"
+    },
+    {
+      "token": "3bbd21509883343752031ed26bb81b1819dd23471b8a4f90e2b9d5128cff899a",
+      "username": "yy661003",
+      "expires_at": "2026-09-20T15:22:06.155Z",
+      "created_at": "2026-09-13T15:22:06.155Z"
+    },
+    {
+      "token": "9cd20f934ba6f93dd265021fb0c8494b2b8cb7b18ae12746c0782a23726e3334",
+      "username": "yy661003",
+      "expires_at": "2026-09-20T15:24:33.656Z",
+      "created_at": "2026-09-13T15:24:33.657Z"
+    }
+  ]
 }
